@@ -8,15 +8,14 @@ class DataProcessor(ABC):
 
     @abstractmethod
     def process(self, data: Any) -> str:
-        result: Any = data
-        return result
+        pass
 
     @abstractmethod
     def validate(self, data: Any) -> bool:
-        return True
+        pass
 
     def format_output(self, result: str) -> str:
-        print(f"Output: {result}")
+        return f"Output: {result}"
 
 
 class NumericProcessor(DataProcessor):
@@ -66,9 +65,12 @@ class TextProcessor(DataProcessor):
         return f"Processed text: {count} characters, {count_words} words"
 
     def validate(self, data: Any) -> bool:
-        if data is not str:
+        try:
+            for _ in data:
+                pass
+            return True
+        except Exception:
             return False
-        return True
 
 
 class LogProcessor(DataProcessor):
@@ -88,24 +90,35 @@ class LogProcessor(DataProcessor):
                 return f" {value} {key} level detected: {data[key]}"
 
     def validate(self, data: Any) -> bool:
-        if data is not Dict:
+        try:
+            for key in self.categolies:
+                if key in data:
+                    return True
             return False
-        for key in self.categolies:
-            if key in data:
-                return True
+        except Exception:
             return False
 
 
-def stream_processor(data: any, data_processor: DataProcessor) -> None:
-    is_valid: bool = True
-    is_valid = data_processor.validate(data)
-
-
+def stream_processor(data: Any, processor: DataProcessor) -> None:
+    if processor.validate(data) is True:
+        result: str = processor.process(data)
+        processor.format_output(result)
 
 
 def main() -> None:
     print("=== CODE NEXUS - DATA PROCESSOR FOUNDATION ===")
     print()
+    processors: List[DataProcessor] = [
+        NumericProcessor(),
+        TextProcessor(),
+        LogProcessor(),
+    ]
+    data_samples: List[Any] = [
+        [1, 2, 3, 4, 5],
+         "Hello Nexus World",
+         "ERROR: Connection timeout",
+    ]
+
     print("=== Polymorphic Processing Demo ===")
     print()
     print("Foundation systems online. Nexus ready for advanced streams.")
