@@ -83,9 +83,9 @@ class LogProcessor(DataProcessor):
 
     def process(self, data: Any) -> str:
         words: List[str] = ft_split(data, ":")
-        for key, value in self.categories.items():
+        for key in self.categories:
             if key in data:
-                return f" {value} {key} level detected: {data[key]}"
+                return f" {self.categories[key]} {key} level detected: {data[key]}"
 
     def validate(self, data: Any) -> bool:
         try:
