@@ -19,60 +19,62 @@ class DataProcessor(ABC):
 
 
 class NumericProcessor(DataProcessor):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
     def process(self, data: Any) -> str:
-        values: int = 0
+        if not self.validate(data):
+            raise ValueError("Invalid numeric data")
+        values: Optional[int] = ft_len(data)
         total: Union[int, float] = 0
         for num in data:
             total += num
-            values += 1
         avg: float = total / values
         return f"Processed {values} numeric values, sum={total}, avg={avg}"
 
     def validate(self, data: Any) -> bool:
         try:
+            i: Optional[int] = ft_len(data)
+            if i is None or i == 0:
+                raise Exception
             total: Union[int, float] = 0
             for num in data:
                 total += num
-            print("Validation: Numeric data verified")
             return True
         except Exception:
             return False
 
 
 class TextProcessor(DataProcessor):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
     def process(self, data: Any) -> str:
-        count_chars: int = 0
-        count_words: int = 0
-        words: List[str] = ft_split(data, " ")
-        for _ in data:
-            count_chars += 1
-        for _ in words:
-            count_words += 1
+        if not self.validate(data):
+            raise ValueError("Invalid text data")
+        count_chars: Optional[int] = ft_len(data)
+        words: Optional[List[str]] = ft_split(data, " ")
+        count_words: Optional[int] = ft_len(words)
         return f"Processed text: {count_chars} characters, {count_words} words"
 
     def validate(self, data: Any) -> bool:
         try:
-            words: List[str] = ft_split(data, " ")
+            i: Optional[int] = ft_len(data)
+            if i is None:
+                return False
+            words: Optional[List[str]] = ft_split(data, " ")
             if words is None:
                 raise Exception("to_split must be a single character")
-            for _ in data:
-                pass
-            for _ in words:
-                pass
-            print("Validation: Text data verified")
+            i: Optional[int] = ft_len(words)
+            if i is None:
+                return False
             return True
         except Exception:
             return False
 
 
 class LogProcessor(DataProcessor):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
     categories: Dict[str, str] = {
@@ -82,92 +84,117 @@ class LogProcessor(DataProcessor):
     }
 
     def process(self, data: Any) -> str:
-        words: List[str] = ft_split(data, ":")
+        if not self.validate(data):
+            raise ValueError("Invalid log data")
+        words: Optional[List[str]] = ft_split(data, ":")
+        i: int = 0
+        message: str = ""
+        for char in words[1]:
+            if i != 0 or char != " ":
+                message += char
+            i += 1
+        log: Dict[str, str] = {words[0]: message}
         for key in self.categories:
-            if key in data:
-                return f" {self.categories[key]} {key} level detected: {data[key]}"
+            if key in log:
+                level_tag: str = self.categories[key]
+                return f"{level_tag} {key} level detected: {log[key]}"
+        return "Unknown log level"
 
     def validate(self, data: Any) -> bool:
         try:
-            words: List[str] = ft_split(data, ":")
+            words: Optional[List[str]] = ft_split(data, ":")
+            if words is None:
+                raise Exception
+            i: Optional[int] = ft_len(words)
+            if i is None or i != 2:
+                raise Exception
             i: int = 0
-            for _ in words:
+            message: str = ""
+            for char in words[1]:
+                if i != 0 or char != " ":
+                    message += char
                 i += 1
-            if i != 2:
-                raise Exception()
-
+            log: dict[str, str] = {words[0]: message}
             for key in self.categories:
-                if key in data:
-                    print("Validation: Log entry verified")
+                if key in log:
                     return True
-            return False
+            raise Exception
         except Exception:
             return False
 
 
-def ft_split(line: str, to_split: str) -> List[str] | None:
+def ft_len(data: Any) -> Optional[int]:
     try:
         i: int = 0
-        for char in to_split:
+        for _ in data:
             i += 1
-        if i != 1:
-            raise ValueError("to_split must be a single character")
-    except ValueError as e:
-        print(e)
+        return i
+    except TypeError:
+        print("Error: argument is not iterable")
+        return None
+
+
+def ft_split(line: str, to_split: str) -> Optional[List[str]]:
+    i: int = 0
+    for char in to_split:
+        i += 1
+    if i != 1:
+        print("to_split must be a single character")
         return None
     words: List[str] = []
-    word: Optional[str] = None
-    in_word: bool = False
+    word: str = ""
     for char in line:
         if char != to_split:
-            if not in_word:
-                word = char
-                in_word = True
-            else:
-                word += char
+            word += char
         else:
-            if in_word and word is not None:
+            if word != "":
                 words += [word]
-                word = None
-                in_word = False
-    if in_word and word is not None:
+                word = ""
+    if word != "":
         words += [word]
     return words
 
 
-def stream_processor(type: str, processor: DataProcessor, data: Any) -> None:
-    print(f"Initializing {type} Processor...")
+def processor_foundation(name: str,
+                         processor: DataProcessor, data: Any) -> None:
+    print(f"Initializing {name} Processor...")
     print(f'Processing data: "{data}"')
-    if processor.validate(data) is True:
+    if processor.validate(data):
+        if name == "Log":
+            print(f"Validation: {name} entry verified")
+        else:
+            print(f"Validation: {name} data verified")
         result: str = processor.process(data)
         print(processor.format_output(result))
         print()
 
 
-def stream_processor2(type: str, processor: DataProcessor, data: Any) -> None:
+def polymorphic_processing(i: int,
+                           processor: DataProcessor, data: Any) -> None:
+    if processor.validate(data):
         result: str = processor.process(data)
-        print(processor.format_output(result))
+        print(f"Result {i}: {result}")
 
 
 def main() -> None:
     print("=== CODE NEXUS - DATA PROCESSOR FOUNDATION ===")
     print()
-    data_bases: List[str, DataProcessor, Any] = [
-        ("Numeric", NumericProcessor(),[1, 2, 3, 4, 5]),
+    data_bases: List[tuple[str, DataProcessor, Any]] = [
+        ("Numeric", NumericProcessor(), [1, 2, 3, 4, 5]),
         ("Text", TextProcessor(), "Hello Nexus World"),
         ("Log", LogProcessor(), "ERROR: Connection timeout"),
     ]
-    for type, processor, data_base in data_bases:
-        stream_processor(type, processor, data_base)
+    for name, processor, data_base in data_bases:
+        processor_foundation(name, processor, data_base)
     print("=== Polymorphic Processing Demo ===")
     print()
-    data_bases: List[str, DataProcessor, Any] = [
-        ("Numeric", NumericProcessor(),[1, 2, 3]),
-        ("Text", TextProcessor(), "Nexus World!"),
-        ("Log", LogProcessor(), {"INFO: System ready"}),
+    data_bases: List[tuple[int, DataProcessor, Any]] = [
+        (1, NumericProcessor(), [1, 2, 3]),
+        (2, TextProcessor(), "Nexus World!"),
+        (3, LogProcessor(), "INFO: System ready"),
     ]
-    for type, processor, data_base in data_bases:
-        stream_processor2(type, processor, data_base)
+    for i, processor, data_base in data_bases:
+        polymorphic_processing(i, processor, data_base)
     print()
     print("Foundation systems online. Nexus ready for advanced streams.")
 
