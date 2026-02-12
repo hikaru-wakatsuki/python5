@@ -7,6 +7,8 @@ class DataStream(ABC):
         super().__init__()
         self.stream_id: str = stream_id
         self.stream_type: str = stream_type
+        self.processed_batches: int = 0
+        self.total_items: int = 0
 
     @abstractmethod
     def process_batch(self, data_batch: List[Any]) -> str:
@@ -14,25 +16,19 @@ class DataStream(ABC):
 
     def filter_data(self, data_batch: List[Any],
                     criteria: Optional[str] = None) -> List[Any]:
-        try:
-            data: Dict[str, Union[int, float]] = {}
-            for line in data_batch:
-                words: list[str] = line.split(":")
-                i: int = 0
-                for _ in words:
-                    i += 1
-                if i != 2:
-                    raise ValueError
-                data[words[0]] = float(words[1])
-            if criteria == None:
-                return data
-            return
-
-        except Exception:
+        if criteria is None:
+            return [item for item in data_batch if isinstance(item, str)]
+        return [item for item in data_batch
+            if isinstance(item, str) and criteria in item]
 
 
     def get_stats(self) -> Dict[str, Union[str, int, float]]:
-        pass
+        return {
+            "stream_id": self.stream_id,
+            "stream_type" : self.stream_type,
+            "processed_batches": self.processed_batches,
+            "total_items": self.total_items
+        }
 
 
 class SensorStream(DataStream):
@@ -41,17 +37,31 @@ class SensorStream(DataStream):
 
     def process_batch(self, data_batch: List[Any]) -> str:
         try:
-            data: Dict[str, Union[int, float]] = {}
-            for line in data_batch:
-                words: list[str] = line.split(":")
-                i: int = 0
-                for _ in words:
-                    i += 1
-                if i != 2:
-                    raise ValueError
-
-
-
+            filtered: List[Any] = []
+            filtered += self.filter_data(data_batch, "temp")
+            filtered += self.filter_data(data_batch, "humidity")
+            filtered += self.filter_data(data_batch, "pressure")
+            data: Dict[str, Union[int, float]] = create_dict(filtered)
+            if data == {}:
+                raise Exception
+            sum_temp: Union[int, float] = 0
+            count_temp: int = 0
+            for key, value in data.items():
+                if key == "temp" and -20 <= value <= 50:
+                    total_items += 1
+                    count_temp += 1
+                    sum_temp += value
+                if key == "humidity" and 0 <= value <= 100:
+                    total_items += 1
+                if key == "pressure" and 900 <= value <= 1050:
+                    total_items += 1
+            self.processed_batches += 1
+            if count_temp == 0:
+                raise Exception
+            avg_temp: Union[int, float] = sum_temp / count_temp
+            return (f"Sensor analysis: {total_items} readings processed, avg temp: {avg_temp}°C")
+        except Exception as e:
+            return e
 
 
 class TransactionStream(DataStream):
@@ -66,15 +76,24 @@ class EventStream(DataStream):
 
 
 
-def ft_len(data: Any) -> Optional[int]:
+def create_dict(data_batch: List[Any]) -> Dict[str, Union[int, float]]:
     try:
-        i: int = 0
-        for _ in data:
-            i += 1
-        return i
-    except TypeError:
-        print("Error: argument is not iterable")
-        return None
+        data: Dict[str, Union[int, float]] = {}
+        for line in data_batch:
+            if not isinstance(line, str):
+                raise TypeError()
+            words: list[str] = line.split(":")
+            i: int = 0
+            for _ in words:
+                i += 1
+            if i != 2:
+                raise ValueError("Invalid data format")
+            data[words[0]] = float(words[1])
+        return data
+
+    except Exception as e:
+        print(e)
+        return {}
 
 
 
