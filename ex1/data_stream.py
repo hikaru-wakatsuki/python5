@@ -14,8 +14,22 @@ class DataStream(ABC):
 
     def filter_data(self, data_batch: List[Any],
                     criteria: Optional[str] = None) -> List[Any]:
-        for data in data_batch:
-            words:  = ft_split(data)
+        try:
+            data: Dict[str, Union[int, float]] = {}
+            for line in data_batch:
+                words: list[str] = line.split(":")
+                i: int = 0
+                for _ in words:
+                    i += 1
+                if i != 2:
+                    raise ValueError
+                data[words[0]] = float(words[1])
+            if criteria == None:
+                return data
+            return
+
+        except Exception:
+
 
     def get_stats(self) -> Dict[str, Union[str, int, float]]:
         pass
@@ -26,6 +40,18 @@ class SensorStream(DataStream):
         super().__init__(stream_id, "Environmental Data")
 
     def process_batch(self, data_batch: List[Any]) -> str:
+        try:
+            data: Dict[str, Union[int, float]] = {}
+            for line in data_batch:
+                words: list[str] = line.split(":")
+                i: int = 0
+                for _ in words:
+                    i += 1
+                if i != 2:
+                    raise ValueError
+
+
+
 
 
 class TransactionStream(DataStream):
@@ -51,25 +77,7 @@ def ft_len(data: Any) -> Optional[int]:
         return None
 
 
-def ft_split(line: str, to_split: str) -> Optional[List[str]]:
-    i: int = 0
-    for char in to_split:
-        i += 1
-    if i != 1:
-        print("to_split must be a single character")
-        return None
-    words: List[str] = []
-    word: str = ""
-    for char in line:
-        if char != to_split:
-            word += char
-        else:
-            if word != "":
-                words += [word]
-                word = ""
-    if word != "":
-        words += [word]
-    return words
+
 
 
 def main() -> None:
