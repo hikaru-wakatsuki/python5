@@ -171,10 +171,7 @@ class StreamProcessor:
                 message = "Transaction"
             else:
                 message = "Event"
-            print(f"Initializing {message} Stream...")
-            print(f"Stream ID: {stream.stream_id}, Type: {stream.stream_type}")
-            print(f"Processing sensor batch: {batch}")
-            print(f"{message} analysis: {stream.process_batch(batch)}")
+            print(f"{message} data: {stream.process_batch(batch)}")
             print()
             i += 1
 
@@ -208,7 +205,7 @@ def main() -> None:
         ["buy:100", "sell:150", "buy:75", "sell:100"],
         ["login", "error", "logout"]
     ]
-    processor.process_all(batches)
+    processor.process_status(batches)
     print("All streams processed successfully. Nexus throughput optimal.")
 
 
