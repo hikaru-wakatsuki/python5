@@ -7,7 +7,6 @@ class DataStream(ABC):
         super().__init__()
         self.stream_id: str = stream_id
         self.stream_type: str = stream_type
-        self.processed_batches: int = 0
         self.total_items: int = 0
 
     @abstractmethod
@@ -25,7 +24,6 @@ class DataStream(ABC):
         return {
             "stream_id": self.stream_id,
             "stream_type": self.stream_type,
-            "processed_batches": self.processed_batches,
             "total_items": self.total_items
         }
 
@@ -33,76 +31,113 @@ class DataStream(ABC):
 class SensorStream(DataStream):
     def __init__(self, stream_id: str) -> None:
         super().__init__(stream_id, "Environmental Data")
+        self.sensor_alerts: int = 0
 
     def process_batch(self, data_batch: List[Any]) -> str:
         try:
-            filtered: List[Any] = []
-            filtered += self.filter_data(data_batch, "temp")
-            filtered += self.filter_data(data_batch, "humidity")
-            filtered += self.filter_data(data_batch, "pressure")
+            filtered: List[Any] = self.filter_data(data_batch)
+            if filtered == []:
+                raise Exception("No valid sensor data")
             sum_temp: Union[int, float] = 0
             count_temp: int = 0
             for line in filtered:
-                if not isinstance(line, str):
-                    raise TypeError()
                 words: List[str] = line.split(":")
-                i: int = 0
-                for _ in words:
-                    i += 1
-                if i != 2:
-                    raise ValueError("Invalid data format")
                 key: str = words[0]
                 value: Union[int, float] = float(words[1])
-                if key == "temp" and -20 <= value <= 50:
-                    self.total_items += 1
+                if key == "temp":
                     count_temp += 1
                     sum_temp += value
-                if key == "humidity" and 0 <= value <= 100:
-                    self.total_items += 1
-                if key == "pressure" and 900 <= value <= 1050:
-                    self.total_items += 1
-            self.processed_batches += 1
+                self.total_items += 1
             if count_temp == 0:
-                raise Exception
+                raise Exception("No temperature data found")
             avg_temp: Union[int, float] = sum_temp / count_temp
             return (f"{self.total_items} readings processed, "
                     f"avg temp: {avg_temp}°C")
         except Exception as e:
             return f"{e}"
 
-
-class TransactionStream(DataStream):
-    def __init__(self, stream_id: str) -> None:
-        super().__init__(stream_id, "Financial Data")
-
-    def process_batch(self, data_batch: List[Any]) -> str:
+    def filter_data(self, data_batch: List[Any],
+                    criteria: Optional[str] = None) -> List[Any]:
         try:
-            filtered: List[Any] = []
-            filtered += self.filter_data(data_batch, "buy")
-            filtered += self.filter_data(data_batch, "sell")
-            sum: int = 0
+            filtered: List[Any] = super().filter_data(data_batch)
+            valid_data: List[Any] = []
             for line in filtered:
                 if not isinstance(line, str):
-                    raise TypeError()
+                    raise TypeError
                 words: List[str] = line.split(":")
                 i: int = 0
                 for _ in words:
                     i += 1
                 if i != 2:
-                    raise ValueError("Invalid data format")
+                    raise ValueError
+                key: str = words[0]
+                value: Union[int, float] = float(words[1])
+                if key == "temp" and -20 <= value <= 50:
+                    valid_data += [line]
+                elif key == "humidity" and 0 <= value <= 100:
+                    valid_data += [line]
+                elif key == "pressure" and 900 <= value <= 1050:
+                    valid_data += [line]
+                else:
+                    self.sensor_alerts += 1
+            return valid_data
+        except Exception:
+            return []
+
+
+class TransactionStream(DataStream):
+    def __init__(self, stream_id: str) -> None:
+        super().__init__(stream_id, "Financial Data")
+        self.large_transactions: int = 0
+
+    def process_batch(self, data_batch: List[Any]) -> str:
+        try:
+            filtered: List[Any] = self.filter_data(data_batch)
+            if filtered == []:
+                raise Exception("No valid transaction data")
+            total: int = 0
+            for line in filtered:
+                words: List[str] = line.split(":")
                 key: str = words[0]
                 value: int = int(words[1])
-                if key == "buy" and value > 0:
+                if key == "buy" and value < 1000000:
                     self.total_items += 1
-                    sum += value
-                if key == "sell" and value > 0:
+                    total += value
+                elif key == "sell" and value < 1000000:
                     self.total_items += 1
-                    sum -= value
-            self.processed_batches += 1
-            return f"{self.total_items} operations, net flow: {sum:+} units"
+                    total -= value
+                else:
+                    self.large_transactions += 1
+            return f"{self.total_items} operations, net flow: {total:+} units"
         except Exception as e:
             print(e)
             return f"{e}"
+
+    def filter_data(self, data_batch: List[Any],
+                    criteria: Optional[str] = None) -> List[Any]:
+        try:
+            filtered: List[Any] = super().filter_data(data_batch)
+            valid_data: List[Any] = []
+            for line in filtered:
+                if not isinstance(line, str):
+                    raise TypeError
+                words: List[str] = line.split(":")
+                i: int = 0
+                for _ in words:
+                    i += 1
+                if i != 2:
+                    raise ValueError
+                key: str = words[0]
+                value: Union[int, float] = float(words[1])
+                if key == "buy" and value > 0:
+                    valid_data += [line]
+                elif key == "sell" and value > 0:
+                    valid_data += [line]
+                else:
+                    self.large_transactions += 1
+            return valid_data
+        except Exception:
+            return []
 
 
 class EventStream(DataStream):
@@ -111,8 +146,9 @@ class EventStream(DataStream):
 
     def process_batch(self, data_batch: List[Any]) -> str:
         try:
-            data: List[Any] = []
-            data += self.filter_data(data_batch)
+            data: List[Any] = self.filter_data(data_batch)
+            if data == []:
+                raise Exception("No valid event data")
             error_count: int = 0
             for event in data:
                 if event == "error":
@@ -120,7 +156,6 @@ class EventStream(DataStream):
                     error_count += 1
                 else:
                     self.total_items += 1
-            self.processed_batches += 1
             return f"{self.total_items} events, {error_count} error detected"
         except Exception as e:
             print(e)
@@ -160,53 +195,57 @@ class StreamProcessor:
         count: int = 0
         for _ in batches:
             count += 1
+        print("Batch 1 Results:")
         i: int = 0
+        sensor_alerts: int = 0
+        large_transactions: int = 0
         while i < count:
             stream: DataStream = self.streams[i]
             batch: List[Any] = batches[i]
-            message: str
+            stream.process_batch(batch)
             if isinstance(stream, SensorStream):
-                message = "Sensor"
+                sensor_alerts = stream.sensor_alerts
+                print(f"- Sensor data: {stream.total_items} "
+                      f"readings processed")
             elif isinstance(stream, TransactionStream):
-                message = "Transaction"
+                large_transactions = stream.large_transactions
+                print(f"- Transaction data: {stream.total_items} "
+                      f"operations processed")
             else:
-                message = "Event"
-            print(f"{message} data: {stream.process_batch(batch)}")
-            print()
+                print(f"- Event data: {stream.total_items} events processed")
             i += 1
+        print()
+        print("Stream filtering active: High-priority data only")
+        print(f"Filtered results: {sensor_alerts} critical sensor alerts, "
+              f"{large_transactions} large transaction")
 
 
 def main() -> None:
     print("=== CODE NEXUS - POLYMORPHIC STREAM SYSTEM ===")
     print()
     processor: StreamProcessor = StreamProcessor()
-    processor.add_stream(SensorStream("SENSOR_002"))
-    processor.add_stream(TransactionStream("TRANS_002"))
-    processor.add_stream(EventStream("EVENT_002"))
+    processor.add_stream(SensorStream("SENSOR_001"))
+    processor.add_stream(TransactionStream("TRANS_001"))
+    processor.add_stream(EventStream("EVENT_001"))
     batches: list[List[Any]] = [
         ["temp:22.5", "humidity:65", "pressure:1013"],
         ["buy:100", "sell:150", "buy:75"],
         ["login", "error", "logout"]
     ]
     processor.process_all(batches)
-    print("Initializing Event Stream...")
-    event: EventStream = EventStream("TRANS_001")
-    event_batch: list[Any] = ["login", "error", "logout"]
-    print(f"Stream ID: {event.stream_id}, Type: {event.stream_type}")
-    print(f"Processing sensor batch: {event_batch}")
-    print(f"Event analysis: {event.process_batch(event_batch)}")
-    print()
     print("=== Polymorphic Stream Processing ===")
-    processor: StreamProcessor = StreamProcessor()
-    processor.add_stream(SensorStream("SENSOR_002"))
-    processor.add_stream(TransactionStream("TRANS_002"))
-    processor.add_stream(EventStream("EVENT_002"))
+    print()
+    processor2: StreamProcessor = StreamProcessor()
+    processor2.add_stream(SensorStream("SENSOR_001"))
+    processor2.add_stream(TransactionStream("TRANS_001"))
+    processor2.add_stream(EventStream("EVENT_001"))
     batches: list[List[Any]] = [
-        ["temp:22.5", "humidity:65"],
-        ["buy:100", "sell:150", "buy:75", "sell:100"],
+        ["temp:22.5", "humidity:65", "temp:500", "pressure:5000"],
+        ["buy:100", "sell:150", "buy:75", "sell:100", "sell:1000000"],
         ["login", "error", "logout"]
     ]
-    processor.process_status(batches)
+    processor2.process_status(batches)
+    print()
     print("All streams processed successfully. Nexus throughput optimal.")
 
 
