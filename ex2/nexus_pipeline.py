@@ -180,8 +180,8 @@ class NexusManager:
                 raise Exception
             i: int = 0
             while i < records:
+                data: Any = {"sensor": "temp", "value": 23.5, "unit": "C"}
                 for p in self.pipelines:
-                    data: Any = {"sensor": "temp", "value": 23.5, "unit": "C"}
                     if isinstance(p, CSVAdapter):
                         data = "user,action,timestamp"
                     if isinstance(p, StreamAdapter):
