@@ -168,26 +168,31 @@ class NexusManager:
             print(p.process(data_base[i]))
             print()
             i += 1
-            try:
-                self.capacity -= 1
-                if self.capacity < 0:
-                    raise Exception
-            except Exception:
-                return
+        try:
+            self.capacity -= 1
+            if self.capacity < 0:
+                raise Exception
+        except Exception:
+            return
 
     def chan_demo(self, records: int) -> None:
         try:
             if self.capacity <= 0 or records < 0:
                 raise Exception
-            total: int = self.capacity
-            data: Any = {"sensor": "temp", "value": 23.5, "unit": "C"}
+            data: Any
             i: int = 0
             while i < records:
                 for p in self.pipelines:
+                    if isinstance(p, JSONAdapter):
+                        data = {"sensor": "temp", "value": 23.5, "unit": "C"}
+                    elif isinstance(p, CSVAdapter):
+                        data = "user,action,timestamp"
+                    elif isinstance(p, StreamAdapter):
+                        data = "Real-time sensor stream"
                     data = p.process(data)
-                    self.capacity -= 1
-                    if self.capacity < 0:
-                        raise Exception
+                self.capacity -= 1
+                if self.capacity < 0:
+                    raise Exception
                 i += 1
             print(f"Chain result: {records} records processed through 3-stage pipeline")
             print("Performance: 95% efficiency, 0.2s total processing time")
