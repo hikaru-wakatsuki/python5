@@ -152,6 +152,8 @@ class NexusManager:
 
     def run_demo(self, data_base: List[Any]) -> None:
         i: int = 0
+        if self.capacity <= 0:
+            return
         for p in self.pipelines:
             if isinstance(p, JSONAdapter):
                 print("Processing JSON data through pipeline...")
@@ -168,26 +170,21 @@ class NexusManager:
             print(p.process(data_base[i]))
             print()
             i += 1
-        try:
             self.capacity -= 1
             if self.capacity < 0:
-                raise Exception
-        except Exception:
-            return
+                return
 
     def chan_demo(self, records: int) -> None:
         try:
             if self.capacity <= 0 or records < 0:
                 raise Exception
-            data: Any
             i: int = 0
             while i < records:
                 for p in self.pipelines:
-                    if isinstance(p, JSONAdapter):
-                        data = {"sensor": "temp", "value": 23.5, "unit": "C"}
-                    elif isinstance(p, CSVAdapter):
+                    data: Any = {"sensor": "temp", "value": 23.5, "unit": "C"}
+                    if isinstance(p, CSVAdapter):
                         data = "user,action,timestamp"
-                    elif isinstance(p, StreamAdapter):
+                    if isinstance(p, StreamAdapter):
                         data = "Real-time sensor stream"
                     data = p.process(data)
                 self.capacity -= 1
