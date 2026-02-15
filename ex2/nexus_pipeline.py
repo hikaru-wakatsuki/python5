@@ -60,7 +60,7 @@ class ProcessingPipeline(ABC):
     def _snapshot(self) -> None:
         self.backup += [[s for s in self.stage]]
 
-    def _recover(self):
+    def _recover(self) -> bool:
         print("Recovery initiated: Switching to backup processor")
         if self.backup:
             self.stage = self.backup.pop()
@@ -86,7 +86,7 @@ class JSONAdapter(ProcessingPipeline):
             status: str = "Normal" if valid else "Abnormal"
             if sensor == "temp":
                 return (
-                    f" Processed temperature reading: "
+                    f"Processed temperature reading: "
                     f"{value}°{unit} ({status} range)"
                     )
             raise ValueError("Error detected in Stage 2: Invalid data format")
@@ -179,7 +179,7 @@ class NexusManager:
             print()
             i += 1
             self.capacity -= 1
-            if self.capacity < 0:
+            if self.capacity <= 0:
                 return
 
     def chan_demo(self, records: int) -> None:
