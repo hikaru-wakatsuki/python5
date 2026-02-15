@@ -186,7 +186,7 @@ def main() -> None:
     for name, processor, data_base in data_bases:
         processor_foundation(name, processor, data_base)
     print("=== Polymorphic Processing Demo ===")
-    print()
+    print("Processing multiple data types through same interface...")
     data_bases: List[tuple[int, DataProcessor, Any]] = [
         (1, NumericProcessor(), [1, 2, 3]),
         (2, TextProcessor(), "Nexus World!"),
