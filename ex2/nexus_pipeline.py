@@ -1,6 +1,7 @@
-from typing import Any, List, Dict, Union, Optional, Protocol
+from typing import Any, List, Dict, Union, Protocol
 from abc import ABC, abstractmethod
 from collections import deque
+
 
 class ProcessingStage(Protocol):
     def process(self, data: Any) -> Any:
@@ -32,6 +33,7 @@ class TransformStage():
 class OutputStage():
     def process(self, data: Any) -> Any:
         return data
+
 
 class ProcessingPipeline(ABC):
     def __init__(self, pipeline_id: str) -> None:
@@ -74,7 +76,8 @@ class JSONAdapter(ProcessingPipeline):
         self._snapshot()
         try:
             if not isinstance(data, dict):
-                raise ValueError("Error detected in Stage 2: Invalid data format")
+                raise ValueError(
+                    "Error detected in Stage 2: Invalid data format")
             data: Dict[str, Any] = self._run_stage(data)
             sensor: str = data.get("sensor")
             value: float = data.get("value")
@@ -88,9 +91,10 @@ class JSONAdapter(ProcessingPipeline):
                     )
             raise ValueError("Error detected in Stage 2: Invalid data format")
         except Exception as e:
-            print (e)
+            print(e)
             if self._recover():
-                return ("Recovery successful: Pipeline restored, processing resumed")
+                return ("Recovery successful: Pipeline restored, "
+                        "processing resumed")
             return ("Recovery failed: Backup processor unavailable")
 
 
@@ -102,10 +106,12 @@ class CSVAdapter(ProcessingPipeline):
         self._snapshot()
         try:
             if not isinstance(data, str):
-                raise ValueError("Error detected in Stage 2: Invalid data format")
+                raise ValueError(
+                    "Error detected in Stage 2: Invalid data format")
             data: Any = self._run_stage(data)
             if not isinstance(data, list):
-                raise ValueError("Error detected in Stage 2: Invalid data format")
+                raise ValueError(
+                    "Error detected in Stage 2: Invalid data format")
             action_count: int = 0
             for word in data:
                 if word == "action":
@@ -114,9 +120,10 @@ class CSVAdapter(ProcessingPipeline):
                 f"User activity logged: {action_count} actions processed"
             )
         except Exception as e:
-            print (e)
+            print(e)
             if self._recover():
-                return ("Recovery successful: Pipeline restored, processing resumed")
+                return ("Recovery successful: Pipeline restored, "
+                        "processing resumed")
             return ("Recovery failed: Backup processor unavailable")
 
 
@@ -128,18 +135,19 @@ class StreamAdapter(ProcessingPipeline):
         self._snapshot()
         try:
             if not isinstance(data, str):
-                raise ValueError("Error detected in Stage 2: Invalid data format")
+                raise ValueError(
+                    "Error detected in Stage 2: Invalid data format")
             data: str = self._run_stage(data)
             if data != "Real-time sensor stream":
-                raise ValueError("Error detected in Stage 2: Invalid data format")
+                raise ValueError(
+                    "Error detected in Stage 2: Invalid data format")
             return ("Stream summary: 5 readings, avg: 22.1°C")
         except Exception as e:
-            print (e)
+            print(e)
             if self._recover():
-                return ("Recovery successful: Pipeline restored, processing resumed")
+                return ("Recovery successful: Pipeline restored, "
+                        "processing resumed")
             return ("Recovery failed: Backup processor unavailable")
-
-
 
 
 class NexusManager:
@@ -191,12 +199,14 @@ class NexusManager:
                 if self.capacity < 0:
                     raise Exception
                 i += 1
-            print(f"Chain result: {records} records processed through 3-stage pipeline")
+            print(f"Chain result: {records} records "
+                  f"processed through 3-stage pipeline")
             print("Performance: 95% efficiency, 0.2s total processing time")
         except Exception:
             return
 
-    def error_recovery_demo(self, p: ProcessingPipeline, bad_input: Any) -> None:
+    def error_recovery_demo(self, p: ProcessingPipeline,
+                            bad_input: Any) -> None:
         result: Any = p.process(bad_input)
         print(result)
 
@@ -206,7 +216,7 @@ def main() -> None:
     print()
     print("Initializing Nexus Manager...")
     manager: NexusManager = NexusManager(1000)
-    print(f"Pipeline capacity: 1000 streams/second")
+    print(f"Pipeline capacity: {manager.capacity} streams/second")
     print()
     json_pipe: JSONAdapter = JSONAdapter("json1")
     csv_pipe: CSVAdapter = CSVAdapter("csv1")
@@ -229,10 +239,10 @@ def main() -> None:
     manager.add_pipeline(json_pipe)
     manager.add_pipeline(csv_pipe)
     manager.add_pipeline(stream_pipe)
-    data_base : List[Any] = [
+    data_base: List[Any] = [
         {"sensor": "temp", "value": 23.5, "unit": "C"},
-         "user,action,timestamp",
-         "Real-time sensor stream",
+        "user,action,timestamp",
+        "Real-time sensor stream",
     ]
     manager.run_demo(data_base)
     print("=== Pipeline Chaining Demo ===")
