@@ -51,10 +51,8 @@ class ProcessingPipeline(ABC):
 
     def _run_stage(self, data: Any) -> Any:
         current: Any = data
-        index: int = 0
         for Stage in self.stage:
             current = Stage.process(current)
-            index += 1
         return current
 
     def _snapshot(self) -> None:
@@ -184,8 +182,12 @@ class NexusManager:
 
     def chan_demo(self, records: int) -> None:
         try:
-            if self.capacity <= 0 or records < 0:
-                raise Exception
+            if self.capacity <= 0:
+                raise ValueError(
+                    "Capacity exhausted: No available processing slots.")
+            if records < 0:
+                raise ValueError(
+                    "Invalid record count: records must be non-negative.")
             i: int = 0
             while i < records:
                 data: Any = {"sensor": "temp", "value": 23.5, "unit": "C"}
@@ -197,13 +199,14 @@ class NexusManager:
                     data = p.process(data)
                 self.capacity -= 1
                 if self.capacity < 0:
-                    raise Exception
+                    raise RuntimeError("Capacity exceeded during processing.")
+
                 i += 1
             print(f"Chain result: {records} records "
                   f"processed through 3-stage pipeline")
             print("Performance: 95% efficiency, 0.2s total processing time")
-        except Exception:
-            return
+        except Exception as e:
+            print(f"Pipeline execution error: {e}")
 
     def error_recovery_demo(self, p: ProcessingPipeline,
                             bad_input: Any) -> None:
