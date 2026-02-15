@@ -186,7 +186,7 @@ class StreamProcessor:
                 message = "Event"
             print(f"Initializing {message} Stream...")
             print(f"Stream ID: {stream.stream_id}, Type: {stream.stream_type}")
-            print(f"Processing sensor batch: {batch}")
+            print(f"Processing {message.lower()} batch: {batch}")
             print(f"{message} analysis: {stream.process_batch(batch)}")
             print()
             i += 1
