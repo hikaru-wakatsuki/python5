@@ -173,7 +173,7 @@ class NexusManager:
                 print("Processing Stream data through same pipeline...")
                 print(f"Input: {data_base[i]}")
                 print("Transform: Aggregated and filtered")
-            print(p.process(data_base[i]))
+            print("Output: ", p.process(data_base[i]))
             print()
             i += 1
             self.capacity -= 1
