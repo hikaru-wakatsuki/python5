@@ -24,7 +24,9 @@ class NumericProcessor(DataProcessor):
 
     def process(self, data: Any) -> str:
         if not self.validate(data):
-            raise ValueError("Invalid numeric data")
+            raise ValueError(
+                "NumericProcessor expects a non-empty "
+                "iterable of int or float")
         values: int = ft_len(data)
         total: Union[int, float] = 0
         for num in data:
@@ -36,7 +38,7 @@ class NumericProcessor(DataProcessor):
         try:
             i: int = ft_len(data)
             if i == 0:
-                raise Exception
+                raise ValueError("Numeric data cannot be empty")
             total: Union[int, float] = 0
             for num in data:
                 total += num
@@ -51,7 +53,7 @@ class TextProcessor(DataProcessor):
 
     def process(self, data: Any) -> str:
         if not self.validate(data):
-            raise ValueError("Invalid text data")
+            raise ValueError("TextProcessor expects a string input")
         count_chars: int = ft_len(data)
         words: List[str] = ft_split(data, " ")
         count_words: int = ft_len(words)
@@ -79,7 +81,7 @@ class LogProcessor(DataProcessor):
 
     def process(self, data: Any) -> str:
         if not self.validate(data):
-            raise ValueError("Invalid log data")
+            raise ValueError("LogProcessor expects format 'LEVEL: message'")
         words: List[str] = ft_split(data, ":")
         i: int = 0
         message: str = ""
@@ -93,14 +95,14 @@ class LogProcessor(DataProcessor):
             if key in log:
                 level_tag = self.categories[key]
                 return f"{level_tag} {key} level detected: {log[key]}"
-        return "Unknown log level"
+        raise ValueError("Unknown log level")
 
     def validate(self, data: Any) -> bool:
         try:
             words: List[str] = ft_split(data, ":")
             i: int = ft_len(words)
             if i != 2:
-                raise Exception
+                raise ValueError("Log must contain exactly one ':' separator")
             i: int = 0
             message: str = ""
             for char in words[1]:
@@ -111,7 +113,7 @@ class LogProcessor(DataProcessor):
             for key in self.categories:
                 if key in log:
                     return True
-            raise Exception
+            raise ValueError("Unknown log level")
         except Exception:
             return False
 
@@ -148,23 +150,29 @@ def ft_split(line: str, to_split: str) -> List[str]:
 
 def processor_foundation(name: str,
                          processor: DataProcessor, data: Any) -> None:
-    print(f"Initializing {name} Processor...")
-    print(f'Processing data: "{data}"')
-    if processor.validate(data):
-        if name == "Log":
-            print(f"Validation: {name} entry verified")
-        else:
-            print(f"Validation: {name} data verified")
-        result: str = processor.process(data)
-        print(processor.format_output(result))
-        print()
+    try:
+        print(f"Initializing {name} Processor...")
+        print(f'Processing data: "{data}"')
+        if processor.validate(data):
+            if name == "Log":
+                print(f"Validation: {name} entry verified")
+            else:
+                print(f"Validation: {name} data verified")
+            result: str = processor.process(data)
+            print(processor.format_output(result))
+            print()
+    except Exception as e:
+        print(e)
 
 
 def polymorphic_processing(i: int,
                            processor: DataProcessor, data: Any) -> None:
-    if processor.validate(data):
-        result: str = processor.process(data)
-        print(f"Result {i}: {result}")
+    try:
+        if processor.validate(data):
+            result: str = processor.process(data)
+            print(f"Result {i}: {result}")
+    except Exception as e:
+        print(e)
 
 
 def main() -> None:
