@@ -58,7 +58,7 @@ class ProcessingPipeline(ABC):
         return current
 
     def _snapshot(self) -> None:
-        self.backup += [[s for s in self.stage]]
+        self.backup.append([s for s in self.stage])
 
     def _recover(self) -> bool:
         print("Recovery initiated: Switching to backup processor")
