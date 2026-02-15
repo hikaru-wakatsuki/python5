@@ -25,7 +25,7 @@ class NumericProcessor(DataProcessor):
     def process(self, data: Any) -> str:
         if not self.validate(data):
             raise ValueError("Invalid numeric data")
-        values: Optional[int] = ft_len(data)
+        values: int = ft_len(data)
         total: Union[int, float] = 0
         for num in data:
             total += num
@@ -34,8 +34,8 @@ class NumericProcessor(DataProcessor):
 
     def validate(self, data: Any) -> bool:
         try:
-            i: Optional[int] = ft_len(data)
-            if i is None or i == 0:
+            i: int = ft_len(data)
+            if i == 0:
                 raise Exception
             total: Union[int, float] = 0
             for num in data:
@@ -52,22 +52,16 @@ class TextProcessor(DataProcessor):
     def process(self, data: Any) -> str:
         if not self.validate(data):
             raise ValueError("Invalid text data")
-        count_chars: Optional[int] = ft_len(data)
-        words: Optional[List[str]] = ft_split(data, " ")
-        count_words: Optional[int] = ft_len(words)
+        count_chars: int = ft_len(data)
+        words: List[str] = ft_split(data, " ")
+        count_words: int = ft_len(words)
         return f"Processed text: {count_chars} characters, {count_words} words"
 
     def validate(self, data: Any) -> bool:
         try:
-            i: Optional[int] = ft_len(data)
-            if i is None:
-                return False
-            words: Optional[List[str]] = ft_split(data, " ")
-            if words is None:
-                raise Exception("to_split must be a single character")
-            i: Optional[int] = ft_len(words)
-            if i is None:
-                return False
+            ft_len(data)
+            words: List[str] = ft_split(data, " ")
+            ft_len(words)
             return True
         except Exception:
             return False
@@ -86,7 +80,7 @@ class LogProcessor(DataProcessor):
     def process(self, data: Any) -> str:
         if not self.validate(data):
             raise ValueError("Invalid log data")
-        words: Optional[List[str]] = ft_split(data, ":")
+        words: List[str] = ft_split(data, ":")
         i: int = 0
         message: str = ""
         for char in words[1]:
@@ -94,19 +88,18 @@ class LogProcessor(DataProcessor):
                 message += char
             i += 1
         log: Dict[str, str] = {words[0]: message}
+        level_tag: Optional[str] = None
         for key in self.categories:
             if key in log:
-                level_tag: str = self.categories[key]
+                level_tag = self.categories[key]
                 return f"{level_tag} {key} level detected: {log[key]}"
         return "Unknown log level"
 
     def validate(self, data: Any) -> bool:
         try:
-            words: Optional[List[str]] = ft_split(data, ":")
-            if words is None:
-                raise Exception
-            i: Optional[int] = ft_len(words)
-            if i is None or i != 2:
+            words: List[str] = ft_split(data, ":")
+            i: int = ft_len(words)
+            if i != 2:
                 raise Exception
             i: int = 0
             message: str = ""
@@ -123,24 +116,22 @@ class LogProcessor(DataProcessor):
             return False
 
 
-def ft_len(data: Any) -> Optional[int]:
+def ft_len(data: Any) -> int:
     try:
         i: int = 0
         for _ in data:
             i += 1
         return i
     except TypeError:
-        print("Error: argument is not iterable")
-        return None
+        raise TypeError("Error: argument is not iterable")
 
 
-def ft_split(line: str, to_split: str) -> Optional[List[str]]:
+def ft_split(line: str, to_split: str) -> List[str]:
     i: int = 0
     for char in to_split:
         i += 1
     if i != 1:
-        print("to_split must be a single character")
-        return None
+        raise TypeError("to_split must be a single character")
     words: List[str] = []
     word: str = ""
     for char in line:
